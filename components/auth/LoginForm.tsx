@@ -4,92 +4,135 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginSchema } from "@/schemas/loginSchema";
-import Link from "next/link";
-import { useLogin } from "@/queries/auth";
 import { useRouter } from "next/navigation";
+import { useLogin } from "@/queries/auth";
+
+// Import shadcn/ui Form components
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function LoginForm() {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginSchema>({
+  // 1. Initialize the form using useForm, this now holds all form state
+  const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   const { mutate, isPending, isError, error } = useLogin();
   const router = useRouter();
+
+  // The onSubmit function receives validated data from react-hook-form
   const onSubmit = (data: LoginSchema) => {
     mutate(data, {
-      onSuccess() {
+      onSuccess: () => {
         router.replace("/dashboard");
       },
     });
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow-lg">
-        <h1 className="mb-6 text-center text-3xl font-bold text-gray-800">
-          Login <Link href="/dashboard">dashboard</Link>
-        </h1>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="mb-4">
-            <label
-              className="mb-1 block text-sm font-medium text-gray-700"
-              htmlFor="email"
-            >
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              className="w-full rounded-md border border-gray-300 p-2 focus:border-indigo-500 focus:ring-indigo-500"
-              {...register("email")}
-            />
-            {errors.email && (
-              <span className="mt-1 block text-sm text-red-500">
-                {errors.email.message}
-              </span>
-            )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">
+            Heavy Equipment Inspection
+          </CardTitle>
+          <CardDescription>
+            Sign in to access the inspection system
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* 2. Wrap the form in the <Form> component */}
+          <Form {...form}>
+            {/* 3. Use form.handleSubmit in the onSubmit handler */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* 4. Use FormField for each input to connect it to react-hook-form state */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      {/* We spread the `field` object to pass down props like onChange, onBlur, value */}
+                      <Input
+                        type="email"
+                        placeholder="Enter your Email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />{" "}
+                    {/* Displays validation errors for this field */}
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter your password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* 5. Display mutation error if it exists */}
+              {isError && (
+                <Alert variant="destructive">
+                  {/* Assuming the error object has a message property */}
+                  <AlertDescription>{error.message}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* 6. Use `isPending` from the mutation for loading state */}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+          </Form>
+          <div className="mt-6 text-sm text-muted-foreground">
+            <p className="font-medium mb-2">Demo Accounts:</p>
+            <div className="space-y-1">
+              <p>
+                <strong>Mechanic:</strong> mechanic1 / password123
+              </p>
+              <p>
+                <strong>Leader:</strong> leader1 / password123
+              </p>
+              <p>
+                <strong>Admin:</strong> admin1 / password123
+              </p>
+            </div>
           </div>
-          <div className="mb-6">
-            <label
-              className="mb-1 block text-sm font-medium text-gray-700"
-              htmlFor="password"
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              className="w-full rounded-md border border-gray-300 p-2 focus:border-indigo-500 focus:ring-indigo-500"
-              {...register("password")}
-            />
-            {errors.password && (
-              <span className="mt-1 block text-sm text-red-500">
-                {errors.password.message}
-              </span>
-            )}
-          </div>
-          <button
-            type="submit"
-            disabled={isPending}
-            className={`w-full rounded-md py-2 text-white transition-colors ${
-              isPending
-                ? "cursor-not-allowed bg-indigo-400"
-                : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            }`}
-          >
-            {isPending ? "Logging in..." : "Login"}
-          </button>
-          {isError && (
-            <p className="mt-4 text-center text-sm text-red-500">
-              {error.message}
-            </p>
-          )}
-        </form>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
